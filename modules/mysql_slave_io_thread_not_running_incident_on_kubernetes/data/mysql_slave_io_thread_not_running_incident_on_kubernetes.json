@@ -1,0 +1,166 @@
+{
+  "name": "mysql_slave_io_thread_not_running_incident_on_kubernetes",
+  "description": "MySQL Slave IO thread not running incident refers to a situation where the IO thread on a MySQL slave server is not running. This results in the slave server not being able to receive updates from the master server, leading to a replication delay that can cause data inconsistencies and other issues. This type of incident requires immediate attention to ensure that the replication process is resumed to prevent data loss and ensure system stability.",
+  "params": [
+    {
+      "name": "MASTER_POD_NAME",
+      "value": ""
+    },
+    {
+      "name": "MYSQL_CONTAINER_NAME",
+      "value": ""
+    },
+    {
+      "name": "SLAVE_POD_NAME",
+      "value": ""
+    },
+    {
+      "name": "MYSQL_POD_NAME",
+      "value": ""
+    },
+    {
+      "name": "NAMESPACE",
+      "value": ""
+    },
+    {
+      "name": "MYSQL_SERVICE_NAME",
+      "value": ""
+    },
+    {
+      "name": "MYSQL_PASSWORD",
+      "value": ""
+    },
+    {
+      "name": "K8S_CLUSTER_NAME",
+      "value": ""
+    }
+  ],
+  "cells": [
+    {
+      "name": "cell_1",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## MySQL Slave IO thread not running incident on Kubernetes.\nMySQL Slave IO thread not running incident refers to a situation where the IO thread on a MySQL slave server is not running. This results in the slave server not being able to receive updates from the master server, leading to a replication delay that can cause data inconsistencies and other issues. This type of incident requires immediate attention to ensure that the replication process is resumed to prevent data loss and ensure system stability."
+    },
+    {
+      "name": "cell_2",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Get the list of all MySQL pods"
+    },
+    {
+      "name": "cell_3",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl get pods -l app=mysql`"
+    },
+    {
+      "name": "cell_4",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the logs of the MySQL pod to see if there are any errors related to the IO thread"
+    },
+    {
+      "name": "cell_5",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl logs ${MYSQL_POD_NAME} | grep \"IO thread\"`"
+    },
+    {
+      "name": "cell_6",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the status of the MySQL replication process"
+    },
+    {
+      "name": "cell_7",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE | `mysql -e \"SHOW SLAVE STATUS\\G\"`"
+    },
+    {
+      "name": "cell_8",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if the MySQL service is running"
+    },
+    {
+      "name": "cell_9",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl get svc ${MYSQL_SERVICE_NAME}`"
+    },
+    {
+      "name": "cell_10",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if the MySQL configuration is correct"
+    },
+    {
+      "name": "cell_11",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | namespace=$NAMESPACE | `mysql --verbose --help | grep \"server-id\"`"
+    },
+    {
+      "name": "cell_12",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the resource utilization of the pod"
+    },
+    {
+      "name": "cell_13",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl top pod ${MYSQL_POD_NAME}`"
+    },
+    {
+      "name": "cell_14",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check if the pod is running on a node with sufficient resources"
+    },
+    {
+      "name": "cell_15",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl describe pod ${MYSQL_POD_NAME} | grep \"Node:\"`"
+    },
+    {
+      "name": "cell_16",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Check the events related to the pod"
+    },
+    {
+      "name": "cell_17",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | limit=1 | random=1 | `kubectl describe pod ${MYSQL_POD_NAME} | grep \"Events\"`"
+    },
+    {
+      "name": "cell_18",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Network connectivity issue between the master and slave databases."
+    },
+    {
+      "name": "cell_19",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | random=1 | limit=1 | invoke_check_network_connectivity($MASTER_POD_NAME, $SLAVE_POD_NAME, $NAMESPACE)"
+    },
+    {
+      "name": "cell_20",
+      "type": "MARKDOWN",
+      "enabled": true,
+      "content": "## Restart the MySQL Slave IO thread on the affected instance."
+    },
+    {
+      "name": "cell_21",
+      "type": "OP_LANG",
+      "enabled": true,
+      "content": "pod | k8s_cluster_name=$K8S_CLUSTER_NAME | app='shoreline' | random=1 | limit=1 | invoke_restart_mysql_slave_io_thread($MYSQL_CONTAINER_NAME, $MYSQL_POD_NAME, $MYSQL_PASSWORD)"
+    }
+  ]
+}
